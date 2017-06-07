@@ -7,8 +7,8 @@ function Samizdat (db) {
 }
 
 Samizdat.prototype.add = function (name, entry, cb) {
-  var key = name ? `${name}/${uuid()}` : uuid()
-  var value = typeof entry === 'string' ? entry : JSON.stringify(entry)
+  var key = createKey(name)
+  var value = createValue(entry)
   var self = this
 
   self._level.get(key, function (err) {
@@ -32,9 +32,9 @@ Samizdat.prototype.add = function (name, entry, cb) {
 }
 
 Samizdat.prototype.change = function (req, entry, cb) {
-  var name = req.replace(req.slice(-37), '')
-  var key = name ? `${name}/${uuid()}` : uuid()
-  var value = typeof entry === 'string' ? entry : JSON.stringify(entry)
+  var name = req.slice(37)
+  var key = createKey(name)
+  var value = createValue(entry)
   var self = this
 
   self._level.get(req, function (err) {
@@ -127,6 +127,14 @@ Samizdat.prototype.rm = function (key, cb) {
       cb(null, entry)
     })
   })
+}
+
+function createKey (name) {
+  return name ? `${uuid()}/${name}` : uuid()
+}
+
+function createValue (entry) {
+  return typeof entry === 'string' ? entry : JSON.stringify(entry)
 }
 
 module.exports = Samizdat
