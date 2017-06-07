@@ -57,12 +57,17 @@ test.add(slug, v1, function (err, data) {
         assert.deepEqual(entry, v2, 'Opened entry wrong with old key')
         console.info('Success: opened updated version with old key')
       })
+
+      test.rm(data.key, function (err) {
+        assert.deepEqual(err, {entryUpdated: true}, 'Removing updated entry does not return correct error')
+        console.info('Success: older version of updated entry cannot be removed')
+      })
     })
   })
 })
 
 /**
- * Add & open string entry
+ * Add, open & remove string entry
  */
 test.add('more', 'stuff', function (err, data) {
   if (err) {
@@ -76,7 +81,21 @@ test.add('more', 'stuff', function (err, data) {
       console.error(err)
     }
     assert.ok(!err, 'Failed to open entry')
-    assert.equal(entry, 'stuff', 'Opened entry value wrong')
+    assert.equal(entry, 'stuff', 'Opened string entry value wrong')
     console.info('Success: opened string entry')
+
+    test.rm(data.key, function (err, entry) {
+      if (err) {
+        console.error(err)
+      }
+      assert.ok(!err, 'Failed to remove entry')
+      assert.equal(entry, 'stuff', 'Removed entry callback value wrong')
+
+      test.open(data.key, function (err, entry) {
+        assert.equal(entry, null, 'Removed entry not null when opened')
+        assert.deepEqual(err, {entryDeleted: true}, 'Opening removed entry does not return correct error')
+        console.info('Success: removed string entry')
+      })
+    })
   })
 })

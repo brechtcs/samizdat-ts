@@ -75,6 +75,9 @@ Samizdat.prototype.open = function (key, cb) {
         if (entry.updated) {
           read(entry.updated, req, cb)
         }
+        else if (entry.deleted) {
+          cb({entryDeleted: true})
+        }
         else {
           cb(null, entry)
         }
@@ -93,8 +96,37 @@ Samizdat.prototype.open = function (key, cb) {
   read(key, key, cb);
 }
 
-Samizdat.prototype.trash = function (key, cb) {
-  cb(true)
+Samizdat.prototype.rm = function (key, cb) {
+  var self = this
+  self._level.get(key, function (err, value) {
+    if (err) {
+      return cb(err)
+    }
+    var entry
+
+    try {
+      entry = JSON.parse(value)
+
+      if (entry.updated) {
+        return cb({entryUpdated: true})
+      }
+    }
+    catch (err) {
+      if (err.name === 'SyntaxError' && typeof value === 'string') {
+        entry = value
+      }
+      else {
+        return cb(err)
+      }
+    }
+
+    self._level.put(key, JSON.stringify({deleted: true}), function (err) {
+      if (err) {
+        return cb(err)
+      }
+      cb(null, entry)
+    })
+  })
 }
 
 module.exports = Samizdat
