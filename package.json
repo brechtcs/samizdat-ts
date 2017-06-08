@@ -18,8 +18,5 @@
   "devDependencies": {
     "levelup": "^1.3.8",
     "memdown": "^1.2.4"
-  },
-  "dependencies": {
-    "uuid": "^3.0.1"
   }
 }

@@ -1,4 +1,4 @@
-var uuid = require('uuid/v1')
+var assert = require('assert')
 
 function Samizdat (db) {
   if (!(this instanceof Samizdat)) return new Samizdat(db)
@@ -6,8 +6,10 @@ function Samizdat (db) {
   this._level = db
 }
 
-Samizdat.prototype.add = function (name, entry, cb) {
-  var key = createKey(name)
+Samizdat.prototype.add = function (id, entry, cb) {
+  assert.equal(typeof id, 'string', 'Entry ID must be a string')
+
+  var key = createKey(id)
   var value = createValue(entry)
   var self = this
 
@@ -32,8 +34,8 @@ Samizdat.prototype.add = function (name, entry, cb) {
 }
 
 Samizdat.prototype.change = function (req, entry, cb) {
-  var name = req.slice(37)
-  var key = createKey(name)
+  var id = req.slice(37)
+  var key = createKey(id)
   var value = createValue(entry)
   var self = this
 
@@ -129,8 +131,14 @@ Samizdat.prototype.rm = function (key, cb) {
   })
 }
 
-function createKey (name) {
-  return name ? `${uuid()}/${name}` : uuid()
+function createStamp () {
+  var time = Date.now().toString(29)
+  var stamp = ('000000000' + time).slice(-9)
+  return stamp.substring(0, 3) + '-' + stamp.substring(3)
+}
+
+function createKey (id) {
+  return createStamp() + '/' + id
 }
 
 function createValue (entry) {
