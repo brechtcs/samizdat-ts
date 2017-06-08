@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/serializable.js"
+    "test": "node test/serializable.js && node test/string.js"
   },
   "repository": {
     "type": "git",
