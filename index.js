@@ -7,7 +7,7 @@ function Samizdat (db) {
 }
 
 Samizdat.prototype.add = function (id, entry, cb) {
-  assert.equal(typeof id, 'string', 'Entry ID must be a string')
+  assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
 
   var key = createKey(id)
   var value = createValue(entry)
