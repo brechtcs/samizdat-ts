@@ -1,21 +1,30 @@
 var assert = require('assert')
+var levelup = require('levelup')
+var nanobus = require('nanobus')
+var shortid = require('shortid')
+var util = require('./util')
 
-function Samizdat (db) {
-  if (!(this instanceof Samizdat)) return new Samizdat(db)
+function Samizdat (opts) {
+  if (!(this instanceof Samizdat)) return new Samizdat(opts)
 
-  this._level = db
+  this._level = levelup(opts)
 }
 
-Samizdat.prototype.add = function (id, entry, cb) {
+Samizdat.prototype.create = function (id, entry, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
+  assert.equal(typeof cb, 'function', 'Create callback must be a function')
 
-  var key = createKey(id)
-  var value = createValue(entry)
+  if (util.validateKey(id)) {
+    return cb({invalidId: true})
+  }
+
+  var key = util.newKey(id)
+  var value = stringifyEntry(entry)
   var self = this
 
-  self._level.get(key, function (err) {
+  self.read(id, function (err) {
     if (!err) {
-      return cb({keyExists: true})
+      return cb({idExists: true})
     }
     else if (!err.notFound) {
       return cb(err)
@@ -27,122 +36,137 @@ Samizdat.prototype.add = function (id, entry, cb) {
       }
       cb(null, {
         key: key,
-        value: entry
+        entry: entry
       })
     })
   })
 }
 
-Samizdat.prototype.change = function (req, entry, cb) {
-  var id = req.slice(37)
-  var key = createKey(id)
-  var value = createValue(entry)
+Samizdat.prototype.read = function (keyOrId, cb) {
+  assert.equal(typeof cb, 'function', 'Read callback must be a function')
+
   var self = this
+  var stream = self._level.createKeyStream({
+    reverse: true
+  })
 
-  self._level.get(req, function (err) {
-    if (err) {
-      return cb(err)
-    }
-
-    self._level.put(key, value, function (err) {
-      if (err) {
-        return cb(err)
-      }
-
-      self._level.put(req, JSON.stringify({updated: key}), function (err) {
+  stream.on('data', function (key) {
+    if (keyOrId === key || keyOrId === util.getId(key)) {
+      self._level.get(key, function (err, value) {
         if (err) {
           return cb(err)
         }
+        stream.destroy()
 
         cb(null, {
           key: key,
-          value: entry
+          entry: parseEntry(value)
         })
       })
-    })
+    }
+  })
+
+  stream.on('error', function (err) {
+    if (err) {
+      cb(err)
+    }
+  })
+
+  stream.on('end', function () {
+    cb({notFound: true})
   })
 }
 
-Samizdat.prototype.open = function (key, cb) {
-  var self = this
-  var read = function (key, req, cb) {
-    self._level.get(key, function (err, value) {
-      if (err) {
-        return cb(err)
-      }
+Samizdat.prototype.update = function (key, entry, cb) {
+  assert.equal(typeof cb, 'function', 'Update callback must be a function')
 
-      try {
-        var entry = JSON.parse(value)
-
-        if (entry.updated) {
-          read(entry.updated, req, cb)
-        }
-        else if (entry.deleted) {
-          cb({entryDeleted: true})
-        }
-        else {
-          cb(null, entry)
-        }
-      }
-      catch (err) {
-        if (err.name === 'SyntaxError') {
-          cb(null, value)
-        }
-        else {
-          cb(err)
-        }
-      }
-    })
+  if (!util.validateKey(key)) {
+    return cb({invalidKey: true})
   }
+  var update = util.updateKey(key)
 
-  read(key, key, cb);
-}
-
-Samizdat.prototype.rm = function (key, cb) {
-  var self = this
-  self._level.get(key, function (err, value) {
+  this._level.put(update, stringifyEntry(entry), function (err) {
     if (err) {
       return cb(err)
     }
-    var entry
-
-    try {
-      entry = JSON.parse(value)
-
-      if (entry.updated) {
-        return cb({entryUpdated: true})
-      }
-    }
-    catch (err) {
-      if (err.name === 'SyntaxError' && typeof value === 'string') {
-        entry = value
-      }
-      else {
-        return cb(err)
-      }
-    }
-
-    self._level.put(key, JSON.stringify({deleted: true}), function (err) {
-      if (err) {
-        return cb(err)
-      }
-      cb(null, entry)
+    cb(null, {
+      key: update,
+      prev: key,
+      entry: entry
     })
   })
 }
 
-function createStamp () {
-  var time = Date.now().toString(29)
-  var stamp = ('000000000' + time).slice(-9)
-  return stamp.substring(0, 3) + '-' + stamp.substring(3)
+Samizdat.prototype.purge = function (opts, cb) {
+  if (!cb && typeof opts === 'function') {
+    cb = opts
+    opts = {}
+  }
+  //TODO
 }
 
-function createKey (id) {
-  return createStamp() + '/' + id
-}
+Samizdat.prototype.io = function (query, opts) {
+  if (!opts && typeof query === 'object') {
+    opts = query
+    query = function () {
+      return true
+    }
+  }
 
-function createValue (entry) {
-  return typeof entry === 'string' ? entry : JSON.stringify(entry)
+  assert.equal(typeof query, 'function', 'Sync query has to be a function')
+  assert.equal(typeof opts, 'object', 'Sync opts has to be an object')
+
+  var bus = opts.instance || nanobus()
+  var session = shortid.generate()
+  var stream = this._level.createReadStream()
+  var self = this
+
+  bus.on('*', function (event, data) {
+    if (event === 'error') return
+
+    self._level.get(data.key, function (err) {
+      if (err.notFound) self._level.put(data.key, data.value, function (err) {
+        if (err) bus.emit('error', err)
+      })
+    })
+  })
+
+  stream.on('data', function (data) {
+    var id = util.getId(data.key)
+    var match = query(id, data)
+
+    assert.equal(typeof match, 'boolean', 'Query function has to return boolean')
+
+    if (match) {
+      bus.emit(session, data)
+    }
+  })
+
+  stream.on('error', function (err) {
+    err._session = session
+    bus.emit('error', err)
+  })
+
+  return bus
 }
 
 module.exports = Samizdat
+
+/**
+ * Private helper functions
+ */
+function stringifyEntry (entry) {
+  return typeof entry === 'string' ? entry : JSON.stringify(entry)
+}
+
+function parseEntry (value) {
+  try {
+    return JSON.parse(value)
+  }
+  catch (err) {
+    if (err.name === 'SyntaxError') {
+      return value
+    }
+    throw new Error(err)
+  }
+}
