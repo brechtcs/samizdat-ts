@@ -11,20 +11,20 @@ test('create and read new entries', function (t) {
   t.plan(7)
 
   db.create('dit', 'deze', function (err, data) {
-    t.notOk(err, 'create string entry')
+    t.notOk(err, 'create first entry')
     t.ok(util.validateKey(data.key), 'created entry key is valid')
 
-    db.create('dat', {die: 'daar'}, function (err) {
-      t.notOk(err, 'create object entry')
+    db.create('dat', 'die', function (err) {
+      t.notOk(err, 'create second entry')
 
       db.read('dit', function (err, data) {
-        t.notOk(err, 'read string entry')
-        t.equal(data.entry, 'deze', 'created string entry matches input')
+        t.notOk(err, 'read first entry')
+        t.equal(data.value, 'deze', 'first entry value matches input')
       })
 
       db.read('dat', function (err, data) {
-        t.notOk(err, 'read object entry')
-        t.deepEqual(data.entry, {die: 'daar'}, 'created object entry matches input')
+        t.notOk(err, 'read second entry')
+        t.equal(data.value, 'die', 'second entry value matches input')
       })
     })
   })
@@ -45,12 +45,12 @@ test('create and update entry, and read both versions', function (t) {
 
       db.read('some', function (err, data) {
         t.notOk(err, 'read updated entry')
-        t.equal(data.entry, 'things', 'updated string matches last version')
+        t.equal(data.value, 'things', 'updated entry matches last version')
       })
 
       db.read(data.prev, function (err, data) {
         t.notOk(err, 'read older version of updated entry')
-        t.equal(data.entry, 'stuff', 'requested version returns correctly')
+        t.equal(data.value, 'stuff', 'requested version returns correctly')
       })
     })
   })

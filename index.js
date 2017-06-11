@@ -10,7 +10,7 @@ function Samizdat (opts) {
   this._level = levelup(opts)
 }
 
-Samizdat.prototype.create = function (id, entry, cb) {
+Samizdat.prototype.create = function (id, value, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
   assert.equal(typeof cb, 'function', 'Create callback must be a function')
 
@@ -19,7 +19,6 @@ Samizdat.prototype.create = function (id, entry, cb) {
   }
 
   var key = util.newKey(id)
-  var value = stringifyEntry(entry)
   var self = this
 
   self.read(id, function (err) {
@@ -36,7 +35,7 @@ Samizdat.prototype.create = function (id, entry, cb) {
       }
       cb(null, {
         key: key,
-        entry: entry
+        value: value
       })
     })
   })
@@ -60,7 +59,7 @@ Samizdat.prototype.read = function (keyOrId, cb) {
 
         cb(null, {
           key: key,
-          entry: parseEntry(value)
+          value: value
         })
       })
     }
@@ -77,7 +76,7 @@ Samizdat.prototype.read = function (keyOrId, cb) {
   })
 }
 
-Samizdat.prototype.update = function (key, entry, cb) {
+Samizdat.prototype.update = function (key, value, cb) {
   assert.equal(typeof cb, 'function', 'Update callback must be a function')
 
   if (!util.validateKey(key)) {
@@ -85,14 +84,14 @@ Samizdat.prototype.update = function (key, entry, cb) {
   }
   var update = util.updateKey(key)
 
-  this._level.put(update, stringifyEntry(entry), function (err) {
+  this._level.put(update, value, function (err) {
     if (err) {
       return cb(err)
     }
     cb(null, {
       key: update,
       prev: key,
-      entry: entry
+      value: value
     })
   })
 }
@@ -121,10 +120,10 @@ Samizdat.prototype.io = function (query, opts) {
   var stream = this._level.createReadStream()
   var self = this
 
-  bus.on('*', function (event, data) {
-    if (event === 'error') return
+  bus.on('*', function (channel, data) {
+    if (channel === 'error') return
 
-    self._level.get(data.key, function (err) {
+    if (channel !== session) self._level.get(data.key, function (err) {
       if (err.notFound) self._level.put(data.key, data.value, function (err) {
         if (err) bus.emit('error', err)
       })
@@ -151,22 +150,3 @@ Samizdat.prototype.io = function (query, opts) {
 }
 
 module.exports = Samizdat
-
-/**
- * Private helper functions
- */
-function stringifyEntry (entry) {
-  return typeof entry === 'string' ? entry : JSON.stringify(entry)
-}
-
-function parseEntry (value) {
-  try {
-    return JSON.parse(value)
-  }
-  catch (err) {
-    if (err.name === 'SyntaxError') {
-      return value
-    }
-    throw new Error(err)
-  }
-}
