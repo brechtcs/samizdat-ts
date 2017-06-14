@@ -80,7 +80,9 @@ Samizdat.prototype.read = function (keyOrId, cb) {
   })
 
   stream.on('end', function () {
-    cb({notFound: true})
+    if (!found) {
+      cb({notFound: true})
+    }
   })
 }
 
