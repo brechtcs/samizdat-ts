@@ -45,12 +45,15 @@ Samizdat.prototype.read = function (keyOrId, cb) {
   assert.equal(typeof cb, 'function', 'Read callback must be a function')
 
   var self = this
+  var found = false
   var stream = self._level.createKeyStream({
     reverse: true
   })
 
   stream.on('data', function (key) {
     if (keyOrId === key || keyOrId === util.getId(key)) {
+      found = true
+
       self._level.get(key, function (err, value) {
         if (err) {
           return cb(err)
