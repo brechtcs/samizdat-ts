@@ -106,6 +106,39 @@ Samizdat.prototype.update = function (key, value, cb) {
   })
 }
 
+/**
+ * Bulk operations:
+ */
+Samizdat.prototype.query = function (opts) {
+  return this._level.createReadStream(opts)
+}
+
+Samizdat.prototype.insert = function (query, cb) {
+  var self = this
+
+  query.on('data', function (data) {
+    self._level.get(data.key, function (err) {
+      // Only insert entries not already present
+      if (err && err.notFound) {
+        self._level.put(data.key, data.value, function (err) {
+          if (err) {
+            input.destroy()
+            cb(err)
+          }
+        })
+      }
+    })
+  })
+
+  query.on('error', function (err) {
+    cb(err)
+  })
+
+  query.on('end', function () {
+    cb(null)
+  })
+}
+
 Samizdat.prototype.purge = function (opts, cb) {
   if (!cb && typeof opts === 'function') {
     cb = opts
@@ -113,50 +146,3 @@ Samizdat.prototype.purge = function (opts, cb) {
   }
   //TODO
 }
-
-Samizdat.prototype.io = function (query, opts) {
-  if (!opts && typeof query === 'object') {
-    opts = query
-    query = function () {
-      return true
-    }
-  }
-
-  assert.equal(typeof query, 'function', 'Sync query has to be a function')
-  assert.equal(typeof opts, 'object', 'Sync opts has to be an object')
-
-  var bus = opts.instance || nanobus()
-  var session = shortid.generate()
-  var stream = this._level.createReadStream()
-  var self = this
-
-  bus.on('*', function (channel, data) {
-    if (channel === 'error') return
-
-    if (channel !== session) self._level.get(data.key, function (err) {
-      if (err.notFound) self._level.put(data.key, data.value, function (err) {
-        if (err) bus.emit('error', err)
-      })
-    })
-  })
-
-  stream.on('data', function (data) {
-    var id = util.getId(data.key)
-    var match = query(id, data)
-
-    assert.equal(typeof match, 'boolean', 'Query function has to return boolean')
-
-    if (match) {
-      bus.emit(session, data)
-    }
-  })
-
-  stream.on('error', function (err) {
-    err._session = session
-    bus.emit('error', err)
-  })
-
-  return bus
-}
-
-module.exports = Samizdat
