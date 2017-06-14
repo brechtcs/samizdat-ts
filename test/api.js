@@ -1,11 +1,11 @@
 var test = require('tape')
+var levelup = require('levelup')
 var memdown = require('memdown')
 var samizdat = require('../')
 var util = require('../util')
 
-var db = samizdat('test', {
-  db: memdown
-})
+var level = levelup(memdown)
+var db = samizdat(level)
 
 test('create and read new entries', function (t) {
   t.plan(7)

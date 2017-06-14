@@ -1,15 +1,20 @@
 var assert = require('assert')
-var levelup = require('levelup')
-var nanobus = require('nanobus')
-var shortid = require('shortid')
 var util = require('./util')
 
-function Samizdat (location, opts) {
-  if (!(this instanceof Samizdat)) return new Samizdat(opts)
+module.exports = Samizdat
 
-  this._level = levelup(location, opts)
+/**
+ * Constructor:
+ */
+function Samizdat (level) {
+  if (!(this instanceof Samizdat)) return new Samizdat(level)
+
+  this._level = level
 }
 
+/**
+ * Entry operations:
+ */
 Samizdat.prototype.create = function (id, value, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
   assert.equal(typeof cb, 'function', 'Create callback must be a function')
