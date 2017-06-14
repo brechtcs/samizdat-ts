@@ -3,7 +3,7 @@ var memdown = require('memdown')
 var samizdat = require('../')
 var util = require('../util')
 
-var db = samizdat({
+var db = samizdat('test', {
   db: memdown
 })
 

@@ -4,10 +4,10 @@ var nanobus = require('nanobus')
 var shortid = require('shortid')
 var util = require('./util')
 
-function Samizdat (opts) {
+function Samizdat (location, opts) {
   if (!(this instanceof Samizdat)) return new Samizdat(opts)
 
-  this._level = levelup(opts)
+  this._level = levelup(location, opts)
 }
 
 Samizdat.prototype.create = function (id, value, cb) {
