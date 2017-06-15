@@ -1,19 +1,20 @@
 var assert = require('assert')
 var keyUtil = require('./key')
 
-module.exports = Samizdat
-
-/**
- * Constructor:
- */
 function Samizdat (level) {
   if (!(this instanceof Samizdat)) return new Samizdat(level)
 
   this._level = level
 }
 
+module.exports = Samizdat
+
 /**
- * Entry operations:
+ * Public methods:
+ * - create
+ * - read
+ * - update
+ * - purge
  */
 Samizdat.prototype.create = function (id, value, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
@@ -106,34 +107,6 @@ Samizdat.prototype.update = function (key, value, cb) {
   })
 }
 
-/**
- * Bulk operations:
- */
-Samizdat.prototype.query = function (opts) {
-  return this._level.createReadStream(opts)
-}
-
-Samizdat.prototype.insert = function (query, cb) {
-  var self = this
-
-  query.on('data', function (data) {
-    self._level.get(data.key, function (err) {
-      // Only insert entries not already present
-      if (err && err.notFound) {
-        self._level.put(data.key, data.value, function (err) {
-          if (err) {
-            input.destroy()
-            cb(err)
-          }
-        })
-      }
-    })
-  })
-
-  query.on('error', cb)
-  query.on('end', cb)
-}
-
 Samizdat.prototype.purge = function (cb) {
   var hitlist = []
   var self = this
@@ -160,6 +133,30 @@ Samizdat.prototype.purge = function (cb) {
         hitlist.push(prev + '/' + id)
       }
     }
+  })
+
+  stream.on('error', cb)
+  stream.on('end', cb)
+}
+
+/**
+ * Private methods:
+ */
+Samizdat.prototype._enter = function (stream, cb) {
+  var self = this
+
+  stream.on('data', function (data) {
+    self._level.get(data.key, function (err) {
+      // Only insert entries not already present
+      if (err && err.notFound) {
+        self._level.put(data.key, data.value, function (err) {
+          if (err) {
+            input.destroy()
+            cb(err)
+          }
+        })
+      }
+    })
   })
 
   stream.on('error', cb)
