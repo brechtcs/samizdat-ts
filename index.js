@@ -1,5 +1,5 @@
 var assert = require('assert')
-var util = require('./util')
+var keyUtil = require('./key')
 
 module.exports = Samizdat
 
@@ -19,11 +19,11 @@ Samizdat.prototype.create = function (id, value, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
   assert.equal(typeof cb, 'function', 'Create callback must be a function')
 
-  if (util.validateKey(id)) {
+  if (keyUtil.validateKey(id)) {
     return cb({invalidId: true})
   }
 
-  var key = util.newKey(id)
+  var key = keyUtil.newKey(id)
   var self = this
 
   self.read(id, function (err) {
@@ -56,7 +56,7 @@ Samizdat.prototype.read = function (keyOrId, cb) {
   })
 
   stream.on('data', function (key) {
-    if (keyOrId === key || keyOrId === util.getId(key)) {
+    if (keyOrId === key || keyOrId === keyUtil.getId(key)) {
       found = true
 
       self._level.get(key, function (err, value) {
@@ -89,10 +89,10 @@ Samizdat.prototype.read = function (keyOrId, cb) {
 Samizdat.prototype.update = function (key, value, cb) {
   assert.equal(typeof cb, 'function', 'Update callback must be a function')
 
-  if (!util.validateKey(key)) {
+  if (!keyUtil.validateKey(key)) {
     return cb({invalidKey: true})
   }
-  var update = util.updateKey(key)
+  var update = keyUtil.updateKey(key)
 
   this._level.put(update, value, function (err) {
     if (err) {
@@ -153,10 +153,10 @@ Samizdat.prototype.purge = function (cb) {
       })
     }
     else {
-      var prev = util.getPrev(key)
-      var id = util.getId(key)
+      var prev = keyUtil.getPrev(key)
+      var id = keyUtil.getId(key)
 
-      if (prev !== util.BLANK) {
+      if (prev !== keyUtil.BLANK) {
         hitlist.push(prev + '/' + id)
       }
     }

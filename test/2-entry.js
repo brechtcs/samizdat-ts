@@ -2,7 +2,7 @@ var test = require('tape')
 var levelup = require('levelup')
 var memdown = require('memdown')
 var samizdat = require('../')
-var util = require('../util')
+var keyUtil = require('../key')
 
 var level = levelup(memdown)
 var db = samizdat(level)
@@ -12,7 +12,7 @@ test('create and read new entries', function (t) {
 
   db.create('dit', 'deze', function (err, data) {
     t.notOk(err, 'create first entry')
-    t.ok(util.validateKey(data.key), 'created entry key is valid')
+    t.ok(keyUtil.validateKey(data.key), 'created entry key is valid')
 
     db.create('dat', 'die', function (err) {
       t.notOk(err, 'create second entry')
@@ -40,8 +40,8 @@ test('create and update entry, read both versions, and run purge job', function 
   db.create('some', 'stuff', function (err, data) {
     db.update(data.key, 'things', function (err, data) {
       t.notOk(err, 'update entry')
-      t.ok(util.validateKey(data.key), 'updated entry key is valid')
-      t.ok(util.validateKey(data.prev), 'previous entry key is valid')
+      t.ok(keyUtil.validateKey(data.key), 'updated entry key is valid')
+      t.ok(keyUtil.validateKey(data.prev), 'previous entry key is valid')
       var prev = data.prev
 
       db.read(prev, function (err, data) {
