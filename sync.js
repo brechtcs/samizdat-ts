@@ -1,10 +1,10 @@
 module.exports = function(first, second, cb) {
-  first.insert(second.query(), function (err) {
+  first._enter(second._level.createReadStream(), function (err) {
     if (err) {
       return cb(err)
     }
 
-    second.insert(first.query(), function (err) {
+    second._enter(first._level.createReadStream(), function (err) {
       if (err) {
         return cb(err)
       }
