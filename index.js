@@ -81,7 +81,7 @@ Samizdat.prototype.read = function (keyOrId, cb) {
 
   stream.on('end', function () {
     if (!found) {
-      cb({notFound: true})
+      cb({notFound: keyOrId})
     }
   })
 }
@@ -130,19 +130,38 @@ Samizdat.prototype.insert = function (query, cb) {
     })
   })
 
-  query.on('error', function (err) {
-    cb(err)
-  })
-
-  query.on('end', function () {
-    cb(null)
-  })
+  query.on('error', cb)
+  query.on('end', cb)
 }
 
-Samizdat.prototype.purge = function (opts, cb) {
-  if (!cb && typeof opts === 'function') {
-    cb = opts
-    opts = {}
-  }
-  //TODO
+Samizdat.prototype.purge = function (cb) {
+  var hitlist = []
+  var self = this
+  var stream = self._level.createKeyStream({reverse: true})
+
+  stream.on('data', function (key) {
+    var purge = hitlist.some(function (chunk) {
+      return key.includes(chunk)
+    })
+
+    if (purge) {
+      self._level.put(key, '', function (err) {
+        if (err) {
+          stream.destroy()
+          cb(err)
+        }
+      })
+    }
+    else {
+      var prev = util.getPrev(key)
+      var id = util.getId(key)
+
+      if (prev !== util.BLANK) {
+        hitlist.push(prev + '/' + id)
+      }
+    }
+  })
+
+  stream.on('error', cb)
+  stream.on('end', cb)
 }

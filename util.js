@@ -13,6 +13,10 @@ function getDate (key) {
   return new Date(parseInt(key.substring(0, 9), BASE))
 }
 
+function getPrev (key) {
+  return key.slice(-9)
+}
+
 function newKey (id) {
   assert.equal(typeof id, 'string' || 'number', 'dataBASE id must be a string or number')
   assert.notEqual(id, '', 'dataBASE id cannot be an empty string')
@@ -49,4 +53,4 @@ function validateKey (key) {
   return true
 }
 
-module.exports = {getId, getDate, newKey, updateKey, validateKey}
+module.exports = {BASE, BLANK, getId, getDate, getPrev, newKey, updateKey, validateKey}

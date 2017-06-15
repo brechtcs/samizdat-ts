@@ -30,8 +30,8 @@ test('create and read new entries', function (t) {
   })
 })
 
-test('create and update entry, and read both versions', function (t) {
-  t.plan(8)
+test('create and update entry, read both versions, and run purge job', function (t) {
+  t.plan(11)
 
   db.create('qds74e412/entry/000000000', 'stuff', function (err) {
     t.ok(err && err.invalidId, 'new entry id cannot be valid database key')
@@ -42,15 +42,25 @@ test('create and update entry, and read both versions', function (t) {
       t.notOk(err, 'update entry')
       t.ok(util.validateKey(data.key), 'updated entry key is valid')
       t.ok(util.validateKey(data.prev), 'previous entry key is valid')
+      var prev = data.prev
 
-      db.read('some', function (err, data) {
-        t.notOk(err, 'read updated entry')
-        t.equal(data.value, 'things', 'updated entry matches last version')
-      })
-
-      db.read(data.prev, function (err, data) {
+      db.read(prev, function (err, data) {
         t.notOk(err, 'read older version of updated entry')
         t.equal(data.value, 'stuff', 'requested version returns correctly')
+
+        db.purge(function (err) {
+          t.notOk(err, 'run database purge job')
+
+          db.read('some', function (err, data) {
+            t.notOk(err, 'read updated entry')
+            t.equal(data.value, 'things', 'updated entry matches last version')
+          })
+
+          db.read(prev, function (err, data) {
+            t.notOk(err, 'leave accessible document for purged entry')
+            t.equal(data.value, '', 'value of purged entry should be empty string')
+          })
+        })
       })
     })
   })

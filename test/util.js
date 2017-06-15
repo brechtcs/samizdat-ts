@@ -33,6 +33,13 @@ test('extract entry creation date from key', function (t) {
   t.end()
 })
 
+test('extract ancestor timestamp from key', function (t) {
+  var key = '214ffg781/key/2130bser0'
+
+  t.equals(util.getPrev(key), '2130bser0', 'extract correct ancestor timestamp from key')
+  t.end()
+})
+
 test('create new database key from entry id', function (t) {
   ['entry', 'multi/level'].forEach(function (id) {
     var key = util.newKey(id)
