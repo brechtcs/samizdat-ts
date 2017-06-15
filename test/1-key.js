@@ -13,7 +13,8 @@ test('validate input string as database key', function (t) {
   t.end()
 })
 
-test('extract entry id from database key', function (t) {
+test('extract entry information from database key', function (t) {
+  // extract IDs
   ['456dst7z5/entry/000000000', '456dst7z5/multi/level/000000000'].forEach(function (key) {
     var id = util.getId(key)
 
@@ -21,19 +22,14 @@ test('extract entry id from database key', function (t) {
     t.ok(key.includes(id), key + ': found id inside database key')
   })
 
-  t.end()
-})
-
-test('extract entry creation date from key', function (t) {
+  // extract creation date
   var now = Date.now()
   var key = util.newKey('entry')
   var date = util.getDate(key)
 
   t.equals(date.getTime(), now, 'extract accurate time from database key')
-  t.end()
-})
 
-test('extract ancestor timestamp from key', function (t) {
+  // extract ancestor timestamp
   var key = '214ffg781/key/2130bser0'
 
   t.equals(util.getPrev(key), '2130bser0', 'extract correct ancestor timestamp from key')
