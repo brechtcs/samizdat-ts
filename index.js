@@ -15,6 +15,7 @@ module.exports = Samizdat
  * - read
  * - update
  * - purge
+ * - sync
  */
 Samizdat.prototype.create = function (id, value, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
@@ -139,10 +140,27 @@ Samizdat.prototype.purge = function (cb) {
   stream.on('end', cb)
 }
 
+Samizdat.prototype.sync = function(peer, cb) {
+  var self = this
+
+  self._pull(peer._push(), function (err) {
+    if (err) {
+      return cb(err)
+    }
+
+    peer._pull(self._push(), function (err) {
+      if (err) {
+        return cb(err)
+      }
+      cb(null)
+    })
+  })
+}
+
 /**
  * Private methods:
  */
-Samizdat.prototype._enter = function (stream, cb) {
+Samizdat.prototype._pull = function (stream, cb) {
   var self = this
 
   stream.on('data', function (data) {
@@ -161,4 +179,8 @@ Samizdat.prototype._enter = function (stream, cb) {
 
   stream.on('error', cb)
   stream.on('end', cb)
+}
+
+Samizdat.prototype._push = function (opts) {
+  return this._level.createReadStream(opts)
 }
