@@ -2,20 +2,20 @@ var test = require('tape')
 var keyUtil = require('../key')
 
 test('validate input string as database key', function (t) {
-  t.ok(keyUtil.validateKey('456dst7z5/entry/000000000'), 'basic entry correctly validated')
-  t.ok(keyUtil.validateKey('456dst7z5/multi/level/000000000'), 'multi-level entry correctly validated')
+  t.ok(keyUtil.validateKey('456dst7z5-entry-000000000'), 'basic entry correctly validated')
+  t.ok(keyUtil.validateKey('456dst7z5-multi-level-000000000'), 'multi-level entry correctly validated')
 
-  t.notOk(keyUtil.validateKey('456dst7z5//000000000'), 'catches empty entry id')
-  t.notOk(keyUtil.validateKey('456dst7z5/000000000'), 'catches missing entry id')
-  t.notOk(keyUtil.validateKey('entry/000000000'), 'catches missing update timestamp')
-  t.notOk(keyUtil.validateKey('456dst7z5/entry'), 'catches missing ancestor timestamp')
-  t.notOk(keyUtil.validateKey('000000000/entry/000000000'), 'catches wrongly encoded creation timestamp')
+  t.notOk(keyUtil.validateKey('456dst7z5-000000000'), 'catches empty entry id')
+  t.notOk(keyUtil.validateKey('456dst7z5-000000000'), 'catches missing entry id')
+  t.notOk(keyUtil.validateKey('entry-000000000'), 'catches missing update timestamp')
+  t.notOk(keyUtil.validateKey('456dst7z5-entry'), 'catches missing ancestor timestamp')
+  t.notOk(keyUtil.validateKey('000000000-entry-000000000'), 'catches wrongly encoded creation timestamp')
   t.end()
 })
 
 test('extract entry information from database key', function (t) {
   // extract IDs
-  ['456dst7z5/entry/000000000', '456dst7z5/multi/level/000000000'].forEach(function (key) {
+  ['456dst7z5-entry-000000000', '456dst7z5-multi-level-000000000'].forEach(function (key) {
     var id = keyUtil.getId(key)
 
     t.ok(id.length > 0, key + ': returned non-empty id')
@@ -30,17 +30,17 @@ test('extract entry information from database key', function (t) {
   t.equals(date.getTime(), now, 'extract accurate time from database key')
 
   // extract ancestor timestamp
-  var key = '214ffg781/key/2130bser0'
+  var key = '214ffg781-key-2130bser0'
 
   t.equals(keyUtil.getPrev(key), '2130bser0', 'extract correct ancestor timestamp from key')
   t.end()
 })
 
 test('create new database key from entry id', function (t) {
-  ['entry', 'multi/level'].forEach(function (id) {
+  ['entry', 'multi-level'].forEach(function (id) {
     var key = keyUtil.newKey(id)
-    var splitKey = key.split('/')
-    var splitId = id.split('/')
+    var splitKey = key.split('-')
+    var splitId = id.split('-')
 
     for (var i = 0; i < splitId.length; i++) {
       t.equal(splitId[i], splitKey[i + 1], `${id}: part ${i + 1} of id corresponds to key`)
@@ -57,10 +57,10 @@ test('create new database key from entry id', function (t) {
 })
 
 test('create database key for updated entry', function (t)  {
-  ['456dst7z5/entry/000000000', '456dst7z5/multi/level/000000000'].forEach(function (prev) {
+  ['456dst7z5-entry-000000000', '456dst7z5-multi-level-000000000'].forEach(function (prev) {
     var key = keyUtil.updateKey(prev)
-    var splitKey = key.split('/')
-    var splitPrev = prev.split('/')
+    var splitKey = key.split('-')
+    var splitPrev = prev.split('-')
 
     for (var i = 1; i < splitPrev.length - 1; i++) {
       t.equal(splitPrev[i], splitKey[i], `${prev}: part ${i} of id corresponds in both keys`)

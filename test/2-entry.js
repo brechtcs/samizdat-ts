@@ -33,7 +33,7 @@ test('create and read new entries', function (t) {
 test('create and update entry, read both versions, and run purge job', function (t) {
   t.plan(11)
 
-  db.create('qds74e412/entry/000000000', 'stuff', function (err) {
+  db.create('qds74e412-entry-000000000', 'stuff', function (err) {
     t.ok(err && err.invalidId, 'new entry id cannot be valid database key')
   })
 

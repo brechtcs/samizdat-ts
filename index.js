@@ -1,4 +1,5 @@
 var assert = require('assert')
+var level = require('pull-level')
 var keyUtil = require('./key')
 
 function Samizdat (level) {
@@ -10,12 +11,7 @@ function Samizdat (level) {
 module.exports = Samizdat
 
 /**
- * Public methods:
- * - create
- * - read
- * - update
- * - purge
- * - sync
+ * standard io operations
  */
 Samizdat.prototype.create = function (id, value, cb) {
   assert.equal(typeof id, 'string' || 'number', 'Entry ID must be a string or number')
@@ -95,8 +91,9 @@ Samizdat.prototype.update = function (key, value, cb) {
     return cb({invalidKey: true})
   }
   var update = keyUtil.updateKey(key)
+  var self = this
 
-  this._level.put(update, value, function (err) {
+  self._level.put(update, value, function (err) {
     if (err) {
       return cb(err)
     }
@@ -105,6 +102,30 @@ Samizdat.prototype.update = function (key, value, cb) {
       prev: key,
       value: value
     })
+
+    // remove indexes associated with old version
+    self._level.createReadStream().on('data', function (data) {
+      if (data.value === key) self._level.del(data.key, function (err) {
+        if (err) throw err
+      })
+    }).on('error', function (err) {
+      throw err
+    })
+  })
+}
+
+Samizdat.prototype.index = function (prop, key, cb) {
+  assert.equal(typeof cb, 'function', 'Update callback must be a function')
+
+  if (!keyUtil.validateKey(key)) {
+    return cb({invalidKey: true})
+  }
+  var index = keyUtil.indexKey(prop)
+
+  this._level.put(index, key, function (err) {
+    if (err) {
+      return cb(err)
+    }
   })
 }
 
@@ -131,56 +152,40 @@ Samizdat.prototype.purge = function (cb) {
       var id = keyUtil.getId(key)
 
       if (prev !== keyUtil.BLANK) {
-        hitlist.push(prev + '/' + id)
+        hitlist.push(prev + '-' + id)
       }
     }
   })
 
   stream.on('error', cb)
   stream.on('end', cb)
-}
-
-Samizdat.prototype.sync = function(peer, cb) {
-  var self = this
-
-  self._pull(peer._push(), function (err) {
-    if (err) {
-      return cb(err)
-    }
-
-    peer._pull(self._push(), function (err) {
-      if (err) {
-        return cb(err)
-      }
-      cb(null)
-    })
-  })
 }
 
 /**
- * Private methods:
+ * pull-stream based operations
  */
-Samizdat.prototype._pull = function (stream, cb) {
-  var self = this
+Samizdat.prototype.live = function (opts) {
+  if (!opts) {
+    opts = {}
+  }
+  if (!opts.min) {
+    opts.min = '000000001'
+  }
 
-  stream.on('data', function (data) {
-    self._level.get(data.key, function (err) {
-      // Only insert entries not already present
-      if (err && err.notFound) {
-        self._level.put(data.key, data.value, function (err) {
-          if (err) {
-            input.destroy()
-            cb(err)
-          }
-        })
-      }
-    })
-  })
-
-  stream.on('error', cb)
-  stream.on('end', cb)
+  return level.live(this._level, opts)
 }
 
-Samizdat.prototype._push = function (opts) {
-  return this._level.createReadStream(opts)
+Samizdat.prototype.query = function (opts) {
+  if (!opts) {
+    opts = {}
+  }
+  if (!opts.min) {
+    opts.min = '000000001'
+  }
+
+  return level.read(this._level, opts)
+}
+
+Samizdat.prototype.write = function (cb) {
+  return level.write(this._level, cb)
 }

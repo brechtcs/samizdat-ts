@@ -17,14 +17,21 @@ function getPrev (key) {
   return key.slice(-9)
 }
 
+function indexKey (prop) {
+  assert.equal(typeof prop, 'string' || 'number' || 'boolean', 'index property must be a string, number, or boolean')
+
+  var random = Math.floor(Math.random() * parseInt('wwwwwwwww', BASE)).toString(BASE)
+  return '000000000-' + prop + '-' + random
+}
+
 function newKey (id) {
-  assert.equal(typeof id, 'string' || 'number', 'dataBASE id must be a string or number')
+  assert.equal(typeof id, 'string' || 'number', 'database id must be a string or number')
   assert.notEqual(id, '', 'dataBASE id cannot be an empty string')
 
   var time = Date.now().toString(BASE)
   var stamp = ('000000000' + time).slice(-9)
 
-  return stamp + '/' + id + '/' + BLANK
+  return stamp + '-' + id + '-' + BLANK
 }
 
 function updateKey (prev) {
@@ -33,7 +40,7 @@ function updateKey (prev) {
 }
 
 function validateKey (key) {
-  var parts = key.split('/')
+  var parts = key.split('-')
   var begin = parts[0]
   var end = parts[parts.length -1]
 
@@ -53,4 +60,4 @@ function validateKey (key) {
   return true
 }
 
-module.exports = {BASE, BLANK, getId, getDate, getPrev, newKey, updateKey, validateKey}
+module.exports = {BASE, BLANK, getId, getDate, getPrev, indexKey, newKey, updateKey, validateKey}
