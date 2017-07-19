@@ -5,7 +5,7 @@ var BLANK = '000000000'
 
 function getId (key) {
   assert.ok(validateKey(key), 'entered key is invalid')
-  return key.slice(10, -10)
+  return key.slice(20)
 }
 
 function getDate (key) {
@@ -14,14 +14,7 @@ function getDate (key) {
 }
 
 function getPrev (key) {
-  return key.slice(-9)
-}
-
-function indexKey (prop) {
-  assert.equal(typeof prop, 'string' || 'number' || 'boolean', 'index property must be a string, number, or boolean')
-
-  var random = Math.floor(Math.random() * parseInt('wwwwwwwww', BASE)).toString(BASE)
-  return '000000000-' + prop + '-' + random
+  return key.substring(10, 19)
 }
 
 function newKey (id) {
@@ -31,7 +24,7 @@ function newKey (id) {
   var time = Date.now().toString(BASE)
   var stamp = ('000000000' + time).slice(-9)
 
-  return stamp + '-' + id + '-' + BLANK
+  return stamp + '-' + BLANK + '-' + id
 }
 
 function updateKey (prev) {
@@ -41,8 +34,8 @@ function updateKey (prev) {
 
 function validateKey (key) {
   var parts = key.split('-')
-  var begin = parts[0]
-  var end = parts[parts.length -1]
+  var timestamp = parts[0]
+  var ancestor = parts[1]
 
   if (parts.length < 3) {
     return false
@@ -50,14 +43,11 @@ function validateKey (key) {
   if (parts.length === 3 && parts[1] === '') {
     return false
   }
-  if (begin.length !== 9 || end.length !== 9) {
-    return false
-  }
-  if (!parseInt(begin, BASE) || (!parseInt(end, BASE) && end !== BLANK)) {
+  if (parseInt(timestamp, BASE) <= parseInt(ancestor, BASE)) {
     return false
   }
 
   return true
 }
 
-module.exports = {BASE, BLANK, getId, getDate, getPrev, indexKey, newKey, updateKey, validateKey}
+module.exports = {BASE, BLANK, getId, getDate, getPrev, newKey, updateKey, validateKey}
