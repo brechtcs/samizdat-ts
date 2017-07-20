@@ -1,5 +1,5 @@
 var test = require('tape')
-var keyUtil = require('../key')
+var keyUtil = require('./')
 
 test('validate input string as database key', function (t) {
   t.ok(keyUtil.validateKey('456dst7z5-000000000-entry'), 'basic entry correctly validated')
