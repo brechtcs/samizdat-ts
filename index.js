@@ -40,7 +40,8 @@ function updateKey (prev) {
 function parse (key) {
   return key.split('-').slice(0, 2).map(function (ts) {
     var date = new Date(parseInt(ts.substring(6), 36))
-    date.setYear(parseInt(ts.substring(0, 3), 36))
+    var year = parseInt(ts.substring(0, 3), 36)
+    date.setYear(year === 0 ? 1 : year)
     date.setMonth(parseInt(ts.substring(3, 4), 12))
     date.setDate(parseInt(ts.substring(4, 5), 31))
     date.setHours(parseInt(ts.substring(5, 6), 24))
@@ -68,11 +69,11 @@ function validate (key) {
 }
 
 module.exports = {
-    getId: getId, 
-    getCurrent: getCurrent,
-    getPrev: getPrev, 
-    newKey: newKey, 
-    updateKey: updateKey, 
-    parse: parse,
-    validate: validate
+  getId: getId, 
+  getCurrent: getCurrent,
+  getPrev: getPrev, 
+  newKey: newKey, 
+  updateKey: updateKey, 
+  parse: parse,
+  validate: validate
 }
