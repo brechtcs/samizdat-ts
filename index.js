@@ -39,9 +39,13 @@ function updateKey (prev) {
 
 function parse (key) {
   return key.split('-').slice(0, 2).map(function (ts) {
-    var date = new Date(parseInt(ts.substring(6), 36))
     var year = parseInt(ts.substring(0, 3), 36)
-    date.setYear(year === 0 ? 1 : year)
+    if (year === 0) {
+        return null
+    }
+
+    var date = new Date(parseInt(ts.substring(6), 36))
+    date.setYear(year)
     date.setMonth(parseInt(ts.substring(3, 4), 12))
     date.setDate(parseInt(ts.substring(4, 5), 31))
     date.setHours(parseInt(ts.substring(5, 6), 24))
@@ -64,7 +68,7 @@ function validate (key) {
   }
 
   return dates.every(function (date) {
-    return date.getTime()
+    return date === null || date.getTime()
   })
 }
 
