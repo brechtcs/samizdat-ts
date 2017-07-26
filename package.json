@@ -1,7 +1,7 @@
 {
   "name": "samizdat-ts",
   "version": "1.0.4",
-  "description": "",
+  "description": "Utility library to create and parse Samizdat database keys",
   "main": "index.js",
   "scripts": {
     "test": "tape 'test.js' | tap-spec"
