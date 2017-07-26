@@ -1,6 +1,6 @@
 {
   "name": "samizdat-ts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,10 +12,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/distilledpm/samizdat-ts.git"
+    "url": "git+https://github.com/pamphlets/samizdat-ts.git"
   },
   "bugs": {
-    "url": "https://github.com/distilledpm/samizdat-db/issues"
+    "url": "https://github.com/pamphlets/samizdat-db/issues"
   },
   "author": "Brecht Savelkoul <brecht@distilled.pm>",
   "license": "GPL-3.0"
